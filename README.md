@@ -1,33 +1,38 @@
 # OpenChat UI
 
-A customizable, open-source chat interface for AI language models. This project provides a clean, modern UI for interacting with various AI models through the OpenRouter API.
+A modern, responsive chat interface for AI interactions built with Next.js. This project provides a clean, user-friendly interface for interacting with AI models through the OpenRouter API.
+
+![Home Screen](/public/screenshots/home%20screen.png)
+
+![Conversation](/public/screenshots/conversation.png)
 
 ## Features
 
-- 🚀 Modern, responsive UI built with Next.js and Tailwind CSS
-- 💬 Real-time streaming responses with typewriter effect
-- 🔄 Markdown rendering for AI responses
-- 🌓 Dark mode by default (light mode coming soon)
-- 🛠️ Easily customizable components and styling
-- 🔌 Ready to use with OpenRouter API (supports multiple models)
+- Clean, modern UI inspired by popular chat applications
+- Real-time streaming responses with typewriter effect
+- Markdown support for AI responses
+- Responsive design that works on desktop and mobile
+- Dark mode interface
+- Message history within the session
+- Ability to stop AI responses mid-generation
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18.0 or later
-- An OpenRouter API key ([Get one here](https://openrouter.ai/))
+- Node.js 18.17 or later
+- An OpenRouter API key
 
-### Installation
+### Environment Setup
 
-1. Clone the repository
+Create a `.env.local` file in the root directory with the following variables:
 
-```bash
-git clone https://github.com/yourusername/openchat-ui.git
-cd openchat-ui
+```
+NEXT_PUBLIC_OPENROUTER_API_KEY=your_openrouter_api_key
+NEXT_PUBLIC_OPENROUTER_MODEL=your_preferred_model_id
 ```
 
-2. Install dependencies
+### Installation
 
 ```bash
 npm install
@@ -37,14 +42,7 @@ yarn install
 pnpm install
 ```
 
-3. Create a `.env.local` file in the root directory and add your OpenRouter API key
-
-```
-NEXT_PUBLIC_OPENROUTER_API_KEY=your_openrouter_api_key_here
-NEXT_PUBLIC_OPENROUTER_MODEL=deepseek/deepseek-chat-v3-0324:free
-```
-
-4. Start the development server
+### Development
 
 ```bash
 npm run dev
@@ -58,33 +56,15 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Customization
 
-### Changing the AI Model
+You can customize the UI by modifying the components in the `src/components/ui` directory. The main chat interface is in `src/app/page.tsx`.
 
-You can change the AI model by updating the `NEXT_PUBLIC_OPENROUTER_MODEL` in your `.env.local` file. OpenRouter supports various models including:
+## Technologies Used
 
-- `anthropic/claude-3-opus:beta`
-- `meta-llama/llama-3-70b-instruct:nitro`
-- `google/gemini-1.5-pro-latest`
-- `deepseek/deepseek-chat-v3-0324:free`
-
-Check the [OpenRouter documentation](https://openrouter.ai/docs) for a full list of supported models.
-
-### Styling
-
-The UI is built with Tailwind CSS and can be easily customized by modifying the Tailwind configuration in `tailwind.config.ts` and the component styles.
-
-### Components
-
-The main components are located in the `src/components/ui` directory and can be modified to suit your needs:
-
-- `chat-input.tsx` - The chat input component
-- `response-stream.tsx` - The streaming response component with typewriter effect
-- `button.tsx` - Button component
-- `textarea.tsx` - Textarea component
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+- [Next.js](https://nextjs.org/) - React framework
+- [React](https://reactjs.org/) - UI library
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [OpenRouter API](https://openrouter.ai/) - AI model access
+- [React Markdown](https://github.com/remarkjs/react-markdown) - Markdown rendering
 
 ## License
 
@@ -92,6 +72,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- Built with [Next.js](https://nextjs.org/)
-- UI components from [shadcn/ui](https://ui.shadcn.com/)
-- Powered by [OpenRouter](https://openrouter.ai/)
+- Inspired by modern chat interfaces
+- Built with the Next.js App Router

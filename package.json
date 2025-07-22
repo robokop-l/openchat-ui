@@ -2,18 +2,19 @@
   "name": "openchat-ui",
   "version": "0.1.0",
   "private": false,
-  "description": "A customizable open-source chatbot interface for AI models",
-  "author": "Your Name",
+  "description": "A modern, responsive chat interface for AI interactions built with Next.js",
+  "author": "OpenChat UI Contributors",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/openchat-ui.git"
+    "url": "https://github.com/robokop-l/openchat-ui.git"
   },
   "keywords": [
-    "chatbot",
     "ai",
-    "openrouter",
+    "chat",
+    "interface",
     "nextjs",
+    "openrouter",
     "react"
   ],
   "scripts": {

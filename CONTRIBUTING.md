@@ -1,6 +1,6 @@
 # Contributing to OpenChat UI
 
-Thank you for considering contributing to OpenChat UI! This document provides guidelines and instructions for contributing to this project.
+Thank you for considering contributing to OpenChat UI! This document outlines the process for contributing to this project.
 
 ## Code of Conduct
 
@@ -25,45 +25,33 @@ Enhancement suggestions are also tracked as GitHub issues. Provide the following
 
 - A clear and descriptive title
 - A detailed description of the suggested enhancement
-- Explain why this enhancement would be useful
-- Provide examples of how it would be used
+- Any examples of how the enhancement would work
+- Why this enhancement would be useful
 
 ### Pull Requests
 
 1. Fork the repository
 2. Create a new branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Commit your changes (`git commit -m 'Add some amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+4. Run tests and linting (`npm run lint`)
+5. Commit your changes (`git commit -m 'Add some amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ### Development Setup
 
 1. Clone the repository
-2. Install dependencies with `npm install`
-3. Create a `.env.local` file with your OpenRouter API key
-4. Start the development server with `npm run dev`
+2. Install dependencies (`npm install`)
+3. Create a `.env.local` file with the required environment variables (see README.md)
+4. Start the development server (`npm run dev`)
 
-### Code Style
+## Style Guide
 
 - Follow the existing code style
-- Use meaningful variable and function names
+- Use descriptive variable and function names
 - Write comments for complex logic
-- Use TypeScript types appropriately
-
-## Project Structure
-
-- `/src/app` - Next.js app router pages
-- `/src/components` - React components
-- `/src/components/ui` - UI components
-- `/src/config` - Configuration files
-- `/src/hooks` - Custom React hooks
-- `/src/lib` - Utility functions
-
-## Customization
-
-The project is designed to be easily customizable. The main configuration file is located at `/src/config/chat-config.ts`. You can modify this file to change the appearance and behavior of the chat interface.
+- Keep components small and focused
 
 ## License
 
-By contributing to OpenChat UI, you agree that your contributions will be licensed under the project's MIT License.
+By contributing to this project, you agree that your contributions will be licensed under the project's MIT License.

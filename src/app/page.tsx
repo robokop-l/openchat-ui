@@ -9,8 +9,8 @@ import { useState } from "react";
 import { toast, Toaster } from "sonner";
 import ReactMarkdown from 'react-markdown';
 import { ShiningText } from "@/components/ui/shining-text";
-import { ResponseStream } from "@/components/ui/response-stream";
-import { chatConfig } from "@/config/chat-config";
+import { ResponseStream } from "@/components/ui/response-stream"; // Added import
+import { Bell, Home as HomeIcon, HelpCircle, Settings, Shield, Mail } from "lucide-react";
 
 interface Message {
 	id: string;
@@ -54,12 +54,11 @@ export default function Home() {
 			setCurrentView("chat");
 		}
 
-		// Get API configuration from environment variables or config file
+		// API Key and Model are now read from environment variables
 		const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
-		const OPENROUTER_MODEL = process.env.NEXT_PUBLIC_OPENROUTER_MODEL || chatConfig.api.defaultModel;
-		const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || chatConfig.api.endpoint;
+		const OPENROUTER_MODEL = process.env.NEXT_PUBLIC_OPENROUTER_MODEL || "deepseek/deepseek-chat-v3-0324:free";
 
-		fetch(API_ENDPOINT, {
+		fetch("https://openrouter.ai/api/v1/chat/completions", {
 			signal: controller.signal, // Pass the abort signal to fetch
 			method: "POST",
 			headers: {
@@ -69,7 +68,7 @@ export default function Home() {
 			body: JSON.stringify({
 				model: OPENROUTER_MODEL,
 				messages: [{ role: "user", content: userMessage.text }],
-				stream: chatConfig.api.stream, // Enable/disable streaming based on config
+				stream: true, // Enable streaming
 			}),
 		})
 			.then(async response => {
@@ -118,7 +117,7 @@ export default function Home() {
 									);
 								}
 							} catch (e) {
-								// There might be incomplete chunks or invalid JSON, skip for now
+								// อาจจะมี chunk ที่ไม่สมบูรณ์ หรือไม่ใช่ JSON ที่ถูกต้อง, ให้ข้ามไปก่อน
 								console.warn("Could not parse stream data chunk:", dataStr, e);
 							}
 						}
@@ -133,7 +132,7 @@ export default function Home() {
 					toast.error(`Error: ${error.message || "Failed to get AI response."}`);
 					const errorMessage: Message = {
 						id: (Date.now() + 1).toString(),
-						text: chatConfig.ui.text.errorMessage,
+						text: "Sorry, I couldn't connect to the AI. Please try again.",
 						sender: "ai",
 						timestamp: new Date(),
 					};
@@ -161,14 +160,14 @@ export default function Home() {
 	};
 
 	return (
-		<div className={`h-screen ${chatConfig.ui.colors.background} ${chatConfig.ui.colors.text} flex flex-col`}>
+		<div className="h-screen bg-[#202124] text-[#E8EAED] flex flex-col">
 			{currentView === "landing" ? (
 				<div className="flex-1 flex flex-col">
 					{/* Landing View */}
 					{/* Main content area */}
 					<div className="flex-1 flex flex-col items-center justify-center p-5">
 						<h1 className="text-4xl font-medium mb-7 text-center">
-							{chatConfig.ui.text.landingTitle}
+							What can I help with?
 						</h1>
 						<div className="w-full max-w-[600px]">
 							<ChatInput
@@ -178,14 +177,14 @@ export default function Home() {
 								onSubmit={handleSubmit}
 								loading={isLoading}
 								onStop={handleStop}
-								className={`${chatConfig.ui.colors.inputBackground} border-none rounded-[28px] p-2`}
+								className="bg-[#303134] border-none rounded-[28px] p-2"
 							>
 								<ChatInputTextArea 
-									placeholder={chatConfig.ui.text.inputPlaceholder} 
-									className={`bg-transparent ${chatConfig.ui.colors.inputText} placeholder:${chatConfig.ui.colors.inputPlaceholder} border-none focus-visible:ring-0 text-base h-12 resize-none`}
+									placeholder="Ask anything" 
+									className="bg-transparent text-[#E8EAED] placeholder:text-[#80868B] border-none focus-visible:ring-0 text-base h-12 resize-none"
 									rows={1}
 								/>
-								<ChatInputSubmit className={`${chatConfig.ui.colors.buttonBackground} ${chatConfig.ui.colors.buttonText} ${chatConfig.ui.colors.buttonHover} border-none w-10 h-10 rounded-full`} />
+								<ChatInputSubmit className="bg-[#F1F3F4] text-[#202124] hover:bg-[#E8EAED] border-none w-10 h-10 rounded-full" />
 							</ChatInput>
 						</div>
 					</div>
@@ -200,18 +199,14 @@ export default function Home() {
 								key={message.id}
 								className={`max-w-[75%] p-4 rounded-[20px] text-[15px] leading-6 break-words ${
 									message.sender === "user"
-										? `${chatConfig.ui.colors.userMessageBackground} ${chatConfig.ui.colors.userMessageText} self-end rounded-br-[6px]`
-										: `${chatConfig.ui.colors.aiMessageBackground} ${chatConfig.ui.colors.aiMessageText} self-start`
+										? "bg-[#303134] text-[#E8EAED] self-end rounded-br-[6px]"
+										: "bg-transparent text-[#E8EAED] self-start"
 								}`}
 							>
 								{message.sender === "user" ? (
 									message.text
 								) : isReceivingStream && messages[messages.length -1].id === message.id ? (
-									<ResponseStream 
-										textStream={message.text} 
-										mode={chatConfig.response.defaultMode as "typewriter" | "fade"}
-										speed={chatConfig.response.defaultSpeed}
-									/>
+									<ResponseStream textStream={message.text} />
 								) : (
 									<div className="whitespace-pre-wrap">
 										<ReactMarkdown>{message.text}</ReactMarkdown>
@@ -220,7 +215,7 @@ export default function Home() {
 							</div>
 						))} 
 						{isLoading && !isReceivingStream && (
-							<ShiningText text={chatConfig.ui.text.loadingText} />
+							<ShiningText text="Typing..." />
 						)}
 					</div>
 					
@@ -234,14 +229,14 @@ export default function Home() {
 								onSubmit={handleSubmit}
 								loading={isLoading}
 								onStop={handleStop}
-								className={`${chatConfig.ui.colors.inputBackground} border-none rounded-[28px] p-2`}
+								className="bg-[#303134] border-none rounded-[28px] p-2"
 							>
 								<ChatInputTextArea 
-									placeholder={chatConfig.ui.text.inputPlaceholder} 
-									className={`bg-transparent ${chatConfig.ui.colors.inputText} placeholder:${chatConfig.ui.colors.inputPlaceholder} border-none focus-visible:ring-0 text-base h-12 resize-none`}
+									placeholder="Ask anything" 
+									className="bg-transparent text-[#E8EAED] placeholder:text-[#80868B] border-none focus-visible:ring-0 text-base h-12 resize-none"
 									rows={1}
 								/>
-								<ChatInputSubmit className={`${chatConfig.ui.colors.buttonBackground} ${chatConfig.ui.colors.buttonText} ${chatConfig.ui.colors.buttonHover} border-none w-10 h-10 rounded-full`} />
+								<ChatInputSubmit className="bg-[#F1F3F4] text-[#202124] hover:bg-[#E8EAED] border-none w-10 h-10 rounded-full" />
 							</ChatInput>
 						</div>
 					</div>
