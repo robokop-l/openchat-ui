@@ -1,101 +1,253 @@
-import Image from "next/image";
+"use client";
+
+import {
+	ChatInput,
+	ChatInputSubmit,
+	ChatInputTextArea,
+} from "@/components/ui/chat-input";
+import { useState } from "react";
+import { toast, Toaster } from "sonner";
+import ReactMarkdown from 'react-markdown';
+import { ShiningText } from "@/components/ui/shining-text";
+import { ResponseStream } from "@/components/ui/response-stream";
+import { chatConfig } from "@/config/chat-config";
+
+interface Message {
+	id: string;
+	text: string;
+	sender: "user" | "ai";
+	timestamp: Date;
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+	const [value, setValue] = useState("");
+	const [isLoading, setIsLoading] = useState(false);
+	const [isReceivingStream, setIsReceivingStream] = useState(false); // New state for stream status
+	const [abortController, setAbortController] = useState<AbortController | null>(null);
+	const [messages, setMessages] = useState<Message[]>([]);
+	const [currentView, setCurrentView] = useState<"landing" | "chat">("landing");
+	const [lastUserMessage, setLastUserMessage] = useState<string>(""); // New state to store last user message
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+
+
+	const handleSubmit = () => {
+		if (!value.trim() || isLoading) return;
+
+		const userMessage: Message = {
+			id: Date.now().toString(),
+			text: value,
+			sender: "user",
+			timestamp: new Date(),
+		};
+
+		setMessages(prev => [...prev, userMessage]);
+		setLastUserMessage(value); // Store the current user input
+		setValue("");
+		setIsLoading(true);
+		setIsReceivingStream(false); // Reset stream status for new message
+		const controller = new AbortController();
+		setAbortController(controller);
+		let aiMessageId: string | null = null; // Declare aiMessageId in a higher scope
+
+		// Switch to chat view if on landing
+		if (currentView === "landing") {
+			setCurrentView("chat");
+		}
+
+		// Get API configuration from environment variables or config file
+		const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
+		const OPENROUTER_MODEL = process.env.NEXT_PUBLIC_OPENROUTER_MODEL || chatConfig.api.defaultModel;
+		const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || chatConfig.api.endpoint;
+
+		fetch(API_ENDPOINT, {
+			signal: controller.signal, // Pass the abort signal to fetch
+			method: "POST",
+			headers: {
+				"Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				model: OPENROUTER_MODEL,
+				messages: [{ role: "user", content: userMessage.text }],
+				stream: chatConfig.api.stream, // Enable/disable streaming based on config
+			}),
+		})
+			.then(async response => {
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({ error: { message: "API request failed with no error details." } }));
+					throw new Error(errorData.error?.message || "API request failed");
+				}
+
+				const reader = response.body?.getReader();
+				if (!reader) {
+					throw new Error("Failed to get response reader.");
+				}
+
+				const decoder = new TextDecoder();
+				let accumulatedContent = "";
+				aiMessageId = (Date.now() + 1).toString(); // Assign value to aiMessageId
+
+				// Add a placeholder message for the AI response
+				setMessages(prev => [...prev, { id: aiMessageId as string, text: "", sender: "ai", timestamp: new Date() }]);
+
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) break;
+
+					const chunk = decoder.decode(value, { stream: true });
+					// Process server-sent events (SSE)
+					const lines = chunk.split("\n");
+					for (const line of lines) {
+						if (line.startsWith("data: ")) {
+							const dataStr = line.substring(6);
+							if (dataStr === "[DONE]") {
+								return; // Stream finished
+							}
+							try {
+								const jsonData = JSON.parse(dataStr);
+								const deltaContent = jsonData.choices?.[0]?.delta?.content;
+								if (deltaContent) {
+									if (!isReceivingStream) {
+										setIsReceivingStream(true); // Set stream status on first token
+									}
+									accumulatedContent += deltaContent;
+									setMessages(prevMessages =>
+										prevMessages.map(msg =>
+											msg.id === aiMessageId ? { ...msg, text: accumulatedContent } : msg
+										)
+									);
+								}
+							} catch (e) {
+								// There might be incomplete chunks or invalid JSON, skip for now
+								console.warn("Could not parse stream data chunk:", dataStr, e);
+							}
+						}
+					}
+				}
+			})
+			.catch(error => {
+				if (error.name === 'AbortError') {
+					console.log('Fetch aborted by user');
+				} else {
+					console.error("Error calling OpenRouter API:", error);
+					toast.error(`Error: ${error.message || "Failed to get AI response."}`);
+					const errorMessage: Message = {
+						id: (Date.now() + 1).toString(),
+						text: chatConfig.ui.text.errorMessage,
+						sender: "ai",
+						timestamp: new Date(),
+					};
+					setMessages(prev => [...prev, errorMessage]);
+				}
+			})
+			.finally(() => {
+				setIsLoading(false);
+				setIsReceivingStream(false); // Reset stream status on completion/error
+			});
+	};
+
+	const handleStop = () => {
+		if (abortController) {
+			abortController.abort();
+			setAbortController(null);
+		}
+		setIsLoading(false);
+		// If stopped before receiving any stream, remove the AI's placeholder message and restore user's input
+		if (!isReceivingStream) {
+			setMessages(prev => prev.slice(0, -1)); // Remove the last (AI placeholder) message
+			setValue(lastUserMessage); // Restore user's last input
+		}
+		setIsReceivingStream(false);
+	};
+
+	return (
+		<div className={`h-screen ${chatConfig.ui.colors.background} ${chatConfig.ui.colors.text} flex flex-col`}>
+			{currentView === "landing" ? (
+				<div className="flex-1 flex flex-col">
+					{/* Landing View */}
+					{/* Main content area */}
+					<div className="flex-1 flex flex-col items-center justify-center p-5">
+						<h1 className="text-4xl font-medium mb-7 text-center">
+							{chatConfig.ui.text.landingTitle}
+						</h1>
+						<div className="w-full max-w-[600px]">
+							<ChatInput
+								variant="default"
+								value={value}
+								onChange={(e) => setValue(e.target.value)}
+								onSubmit={handleSubmit}
+								loading={isLoading}
+								onStop={handleStop}
+								className={`${chatConfig.ui.colors.inputBackground} border-none rounded-[28px] p-2`}
+							>
+								<ChatInputTextArea 
+									placeholder={chatConfig.ui.text.inputPlaceholder} 
+									className={`bg-transparent ${chatConfig.ui.colors.inputText} placeholder:${chatConfig.ui.colors.inputPlaceholder} border-none focus-visible:ring-0 text-base h-12 resize-none`}
+									rows={1}
+								/>
+								<ChatInputSubmit className={`${chatConfig.ui.colors.buttonBackground} ${chatConfig.ui.colors.buttonText} ${chatConfig.ui.colors.buttonHover} border-none w-10 h-10 rounded-full`} />
+							</ChatInput>
+						</div>
+					</div>
+				</div>
+			) : (
+				<>
+					{/* Chat View */}
+					{/* Messages Container */}
+					<div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4 max-w-[800px] mx-auto w-full">
+						{messages.map((message) => (
+							<div
+								key={message.id}
+								className={`max-w-[75%] p-4 rounded-[20px] text-[15px] leading-6 break-words ${
+									message.sender === "user"
+										? `${chatConfig.ui.colors.userMessageBackground} ${chatConfig.ui.colors.userMessageText} self-end rounded-br-[6px]`
+										: `${chatConfig.ui.colors.aiMessageBackground} ${chatConfig.ui.colors.aiMessageText} self-start`
+								}`}
+							>
+								{message.sender === "user" ? (
+									message.text
+								) : isReceivingStream && messages[messages.length -1].id === message.id ? (
+									<ResponseStream 
+										textStream={message.text} 
+										mode={chatConfig.response.defaultMode as "typewriter" | "fade"}
+										speed={chatConfig.response.defaultSpeed}
+									/>
+								) : (
+									<div className="whitespace-pre-wrap">
+										<ReactMarkdown>{message.text}</ReactMarkdown>
+									</div>
+								)}
+							</div>
+						))} 
+						{isLoading && !isReceivingStream && (
+							<ShiningText text={chatConfig.ui.text.loadingText} />
+						)}
+					</div>
+					
+					{/* Input Area */}
+					<div className="p-5 flex justify-center">
+						<div className="w-full max-w-[760px]">
+							<ChatInput
+								variant="default"
+								value={value}
+								onChange={(e) => setValue(e.target.value)}
+								onSubmit={handleSubmit}
+								loading={isLoading}
+								onStop={handleStop}
+								className={`${chatConfig.ui.colors.inputBackground} border-none rounded-[28px] p-2`}
+							>
+								<ChatInputTextArea 
+									placeholder={chatConfig.ui.text.inputPlaceholder} 
+									className={`bg-transparent ${chatConfig.ui.colors.inputText} placeholder:${chatConfig.ui.colors.inputPlaceholder} border-none focus-visible:ring-0 text-base h-12 resize-none`}
+									rows={1}
+								/>
+								<ChatInputSubmit className={`${chatConfig.ui.colors.buttonBackground} ${chatConfig.ui.colors.buttonText} ${chatConfig.ui.colors.buttonHover} border-none w-10 h-10 rounded-full`} />
+							</ChatInput>
+						</div>
+					</div>
+				</>
+			)}
+			<Toaster />
+		</div>
+	);
 }
