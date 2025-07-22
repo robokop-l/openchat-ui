@@ -1,6 +1,7 @@
 # OpenChat UI
 
 A modern, responsive chat interface for AI interactions built with Next.js. This project provides a clean, user-friendly interface for interacting with AI models through the OpenRouter API.
+
 <img width="1470" height="920" alt="home screen" src="https://github.com/user-attachments/assets/def953fd-f33f-4517-ac56-7d99307bf59d" />
 
 <img width="1470" height="920" alt="conversation" src="https://github.com/user-attachments/assets/e1800fc1-89bc-4679-a08e-8e34a0c2bce0" />
